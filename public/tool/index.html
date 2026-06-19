@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=5.0" name="viewport"/>
+<title>Water Footprint Decision Tool</title>
+<link href="assets/img/favicon.png" rel="icon" type="image/png"/>
+<link href="assets/img/favicon.png" rel="apple-touch-icon"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<meta content="A bilingual Arabic/English web-based Water Footprint Decision Tool for crop, irrigation, scenario, and governorate-level calculations." name="description"/><meta content="#0f766e" name="theme-color"/><meta content="Water Footprint Decision Tool" property="og:title"/><meta content="Enhanced validation and scenario edition for water footprint and irrigation decision support." property="og:description"/><meta content="website" property="og:type"/><link href="assets/css/styles.css" rel="stylesheet"/><link href="site.webmanifest" rel="manifest"/></head>
+<body>
+<!-- ══════════════════════════════════════════
+     LOGIN OVERLAY
+══════════════════════════════════════════ -->
+<div id="loginOverlay" style="
+  position:fixed;inset:0;z-index:99999;
+  background:linear-gradient(135deg,#0b3b43 0%,#0f766e 60%,#0e7490 100%);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Segoe UI',Tahoma,Arial,sans-serif;
+  padding:16px;
+">
+<div style="
+    background:rgba(255,255,255,.97);border-radius:28px;
+    box-shadow:0 32px 80px rgba(0,0,0,.3);
+    width:100%;max-width:420px;overflow:hidden;
+  ">
+<!-- Header -->
+<div style="
+      background:linear-gradient(135deg,#0b3b43,#0f766e);
+      padding:28px 28px 22px;text-align:center;color:white;
+    ">
+<img alt="WFP — Water Footprint Program logo" src="assets/img/embedded-image-2.png" style="width:90px;height:90px;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.3);margin-bottom:8px;"/>
+<div style="font-size:20px;font-weight:900;letter-spacing:-.3px;">Water Footprint</div>
+<div style="font-size:13px;opacity:.8;margin-top:4px;">Decision Tool</div>
+</div>
+<!-- Form -->
+<div id="loginFormWrap" style="padding:28px;">
+<div id="loginError" style="
+        display:none;background:#fee2e2;border:1px solid #fca5a5;
+        color:#991b1b;border-radius:12px;padding:10px 14px;
+        font-size:13px;margin-bottom:16px;text-align:center;
+      "></div>
+<label style="display:block;margin-bottom:14px;">
+<span style="display:block;font-weight:800;font-size:13px;color:#334155;margin-bottom:6px;">اسم المستخدم / Username</span>
+<input autocomplete="username" id="loginUser" placeholder="أدخل اسم المستخدم" style="
+          width:100%;border:1px solid #cbd5e1;border-radius:14px;
+          padding:13px 14px;font-size:15px;outline:none;
+          transition:.18s;font-family:inherit;
+        " type="text"/>
+</label>
+<label style="display:block;margin-bottom:20px;">
+<span style="display:block;font-weight:800;font-size:13px;color:#334155;margin-bottom:6px;">كلمة المرور / Password</span>
+<div style="position:relative;">
+<input autocomplete="current-password" id="loginPass" placeholder="أدخل كلمة المرور" style="
+            width:100%;border:1px solid #cbd5e1;border-radius:14px;
+            padding:13px 44px 13px 14px;font-size:15px;outline:none;
+            transition:.18s;font-family:inherit;
+          " type="password"/>
+<button id="passEye" onclick="togglePass()" style="
+            position:absolute;left:12px;top:50%;transform:translateY(-50%);
+            background:none;border:none;cursor:pointer;font-size:18px;
+            padding:4px;box-shadow:none;min-height:unset;
+          " type="button">👁️</button>
+</div>
+</label>
+<button onclick="doLogin()" style="
+        width:100%;background:linear-gradient(135deg,#0f766e,#0e7490);
+        color:white;border:none;border-radius:14px;padding:14px;
+        font-size:16px;font-weight:900;cursor:pointer;
+        box-shadow:0 8px 24px rgba(15,118,110,.3);
+        transition:.18s;letter-spacing:.2px;
+      ">دخول / Login</button>
+<div style="text-align:center;margin-top:14px;font-size:12px;color:#64748b;">
+        المطور: Mohamed M Mahmoud
+      </div>
+</div>
+</div>
+</div>
+<!-- ══════════════════════════════════════════
+     ADMIN PANEL (إدارة المستخدمين)
+══════════════════════════════════════════ -->
+<div id="adminPanel" style="
+  display:none;position:fixed;inset:0;z-index:99998;
+  background:rgba(0,0,0,.55);backdrop-filter:blur(4px);
+  align-items:center;justify-content:center;padding:16px;
+  font-family:'Segoe UI',Tahoma,Arial,sans-serif;
+">
+<div style="
+    background:white;border-radius:24px;width:100%;max-width:500px;
+    box-shadow:0 24px 60px rgba(0,0,0,.25);overflow:hidden;
+    max-height:90vh;overflow-y:auto;
+  ">
+<div style="background:linear-gradient(135deg,#0b3b43,#0f766e);padding:20px 24px;color:white;display:flex;align-items:center;justify-content:space-between;">
+<span style="font-size:17px;font-weight:900;">⚙️ إدارة المستخدمين</span>
+<button onclick="closeAdmin()" style="background:rgba(255,255,255,.2);border:none;color:white;border-radius:999px;width:32px;height:32px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;min-height:unset;box-shadow:none;">✕</button>
+</div>
+<div style="padding:20px;">
+<!-- Add user -->
+<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:16px;margin-bottom:18px;">
+<div style="font-weight:900;font-size:14px;color:#0f766e;margin-bottom:12px;">➕ إضافة مستخدم جديد</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+<input id="newUsername" placeholder="اسم المستخدم" style="border:1px solid #cbd5e1;border-radius:10px;padding:9px 11px;font-size:14px;width:100%;font-family:inherit;"/>
+<input id="newPassword" placeholder="كلمة المرور" style="border:1px solid #cbd5e1;border-radius:10px;padding:9px 11px;font-size:14px;width:100%;font-family:inherit;" type="password"/>
+</div>
+<div style="margin-bottom:10px;">
+<select id="newRole" style="border:1px solid #cbd5e1;border-radius:10px;padding:9px 11px;font-size:14px;width:100%;font-family:inherit;">
+<option value="user">مستخدم عادي / User</option>
+<option value="admin">مدير / Admin</option>
+</select>
+</div>
+<button onclick="addUser()" style="background:linear-gradient(135deg,#0f766e,#0e7490);color:white;border:none;border-radius:10px;padding:9px 18px;font-weight:900;cursor:pointer;font-size:14px;box-shadow:none;">إضافة</button>
+<span id="addUserMsg" style="font-size:13px;margin-right:10px;"></span>
+</div>
+<!-- Users list -->
+<div style="font-weight:900;font-size:14px;color:#334155;margin-bottom:10px;">👥 المستخدمين الحاليين</div>
+<div id="usersList"></div>
+</div>
+</div>
+</div>
+<div class="container">
+<header class="hero">
+<img alt="WFP — Water Footprint Program logo" class="hero-logo" src="assets/img/favicon.png"/>
+<div>
+<h1>Water Footprint Decision Tool</h1>
+<div class="top-actions">
+<label class="lang-switch"><span data-i18n="languageLabel">اللغة / Language</span>
+<select id="languageSelect">
+<option value="ar">العربية</option>
+<option value="en">English</option>
+</select>
+</label>
+<label class="lang-switch calc-mode-switch"><span>نمط الحساب / Calculation Mode</span>
+<select id="dataMode">
+<option selected="" value="automatic">Automatic — Database</option>
+<option value="manual">Manual — User Input</option>
+</select>
+</label>
+</div>
+</div>
+</header>
+<nav class="tabs">
+<button class="tab-btn active" data-i18n="tabCountries" data-tab="countries">الدول</button>
+<button class="tab-btn" data-i18n="tabCalculator" data-tab="calculator">الحاسبة الرئيسية</button>
+<button class="tab-btn" data-i18n="tabComparison" data-tab="comparison">مقارنة المحافظات</button>
+<button class="tab-btn" data-i18n="tabAdvanced" data-tab="advancedAnalytics">التحليل العلمي المتقدم</button>
+<button class="tab-btn" data-i18n="tabEconomicsRisk" data-tab="economicsRisk">اقتصاديات المياه والمخاطر</button>
+<button class="tab-btn" data-i18n="tabMethodology" data-tab="methodologySources">المنهجية والمصادر</button>
+<button class="tab-btn protected-tab" data-tab="eto10years"><span data-i18n="tabETo">ETo 10 Years</span><span class="lock-badge">🔒</span></button>
+<button class="tab-btn protected-tab" data-tab="database"><span data-i18n="tabDatabase">قواعد البيانات</span><span class="lock-badge">🔒</span></button>
+</nav>
+<section aria-label="Live executive summary" class="executive-overview">
+<div class="overview-card primary-card">
+<div class="overview-label" data-i18n="overviewSuitability">درجة الملاءمة</div>
+<div class="overview-value"><span id="liveScore">-</span><small>/100</small></div>
+<div class="overview-hint" id="liveScoreClass">-</div>
+</div>
+<div class="overview-card">
+<div class="overview-label" data-i18n="overviewAppliedWF">إجمالي البصمة التطبيقية</div>
+<div class="overview-value"><span id="liveTotalWF">-</span></div>
+<div class="overview-hint">m³/ton = L/kg</div>
+</div>
+<div class="overview-card">
+<div class="overview-label">Water Saving vs Flood</div>
+<div class="overview-value"><span id="liveSaving">-</span><small>%</small></div>
+<div class="overview-hint">Irrigation efficiency impact</div>
+</div>
+<div class="overview-card recommendation-card">
+<div class="overview-label">Decision Recommendation</div>
+<div class="overview-text" id="liveRecommendation">-</div>
+</div>
+</section>
+<section class="tab-section" id="countries">
+<div class="card">
+<div class="card-body">
+<div class="toolbar">
+<h2 class="section-title">دول</h2>
+<span class="source-chip" data-i18n="countrySourceChip">80 دولة — حاسبة سيناريوهات يدوية لبيانات الدولة والمحصول الموثقة</span>
+</div>
+<div class="country-page-grid">
+<div class="country-select-card">
+<label><span>اختر القارة / Continent</span>
+<select id="continentFilter">
+<option value="All">كل القارات / All continents</option>
+</select>
+</label>
+<label><span data-i18n="countrySelectLabel">اختر الدولة</span><select id="countrySelect"></select></label>
+<div class="country-note-box" data-i18n="countryInfoInitial" id="countryInfoBox">اختر دولة لعرض بياناتها المختصرة.</div>
+<div class="country-actions">
+<button data-i18n="openCountryBtn" id="openCountryBtn" type="button">فتح الدولة</button>
+<button class="primary" data-i18n="calculateCountryNowBtn" id="calculateCountryNowBtn" type="button">احسب نتائج الدولة كاملة الآن</button>
+<button data-i18n="resetCountryInputsBtn" id="resetCountryInputsBtn" type="button">تفريغ قيم الإدخال اليدوي</button>
+</div>
+<div class="country-note-box">
+<strong>طريقة العمل:</strong><br/>
+<span data-i18n-html="countryManualNote">اختيار أي دولة من الـ80 دولة يفتح نفس حاسبة البصمة المائية الكاملة المستخدمة للمحافظات المصرية، لكن في وضع <strong>Manual — User Input</strong>. كل الأرقام اللازمة للحسابات للدولة المختارة — المناخ، المحصول، الإنتاجية، الري، المساحة، النيتروجين والحدود البيئية — تكون من إدخالك أنت فقط، ويمكن استخدام بيانات منشورة في أوراق علمية، FAO، تقارير حكومية، أو قياسات محلية موثقة.<br/><br/><strong>تنبيه منهجي:</strong> صفحة الدول ليست قاعدة بيانات عالمية مغلقة؛ هي حاسبة دولية يدوية عالية المصداقية لأنها لا تفترض قيمًا عامة لدول تختلف بشدة في المناخ والمحاصيل والإنتاجية والإدارة. يمكن حساب أهم المحاصيل في كل دولة بعد إدخال البيانات وتوثيق مصدرها، بينما تظل مصر حالة الدراسة والتحقق الآلي.</span>
+</div>
+</div>
+<div class="card" style="box-shadow:none">
+<div class="card-body">
+<h3 class="section-title" data-i18n="countryManualInputsTitle" style="font-size:18px">مدخلات الدولة اليدوية للحساب الكامل</h3>
+<div class="note" style="margin-bottom:12px">هذه القيم تمثل قاعدة الحساب اليدوي للدولة والمحصول المختارين. اختر محصولًا من المحاصيل المقترحة للدولة أو اكتب محصولًا يدويًا، ثم أدخل كل بيانات المناخ والإنتاجية والري يدويًا قبل الحساب. International outputs are manual, documentable scenarios; use published papers, FAO/governmental data or field measurements before publication.</div>
+<div class="country-manual-grid">
+<label><span data-i18n="countryCropLabel">المحصول المقترح للدولة</span><select id="countryCropSelect"><option data-i18n="countryCropSelectFirst" value="">اختر الدولة أولًا</option></select></label>
+<label><span data-i18n="countryManualCropLabel">محصول يدوي آخر</span><input data-ph-ar="مثال: نعناع، ريحان، مانجو..." data-ph-en="Example: Mint, Basil, Mango..." id="countryCropManualInput" placeholder="مثال: Mint, Basil, Mango..." type="text"/></label>
+<label><span data-i18n="countryProductLabel">المنتج المستخدم في الحساب</span><input data-ph-ar="حبوب، ثمار، عشب طازج، عشب جاف..." data-ph-en="Grain, fruits, fresh herb, dry herb..." id="countryCropProductInput" placeholder="حبوب، ثمار، عشب طازج، عشب جاف..." type="text"/></label>
+<label><span data-i18n="countryCropNotesLabel">ملاحظات مصدر بيانات المحصول</span><input data-ph-ar="بيانات حقلية، FAOSTAT، ورقة علمية، محطة..." data-ph-en="Field data, FAOSTAT, paper, station..." id="countryCropNotesInput" placeholder="بيانات حقلية، FAOSTAT، ورقة علمية، محطة..." type="text"/></label>
+<label><span data-i18n="countryEToDayLabel">ETo مم/يوم</span><input data-ph-ar="يدوي فقط" data-ph-en="Manual only" id="countryEt0Input" placeholder="يدوي فقط" step="0.01" type="number"/></label>
+<label><span data-i18n="countryAnnualEToLabel">ETo السنوي مم/سنة</span><input data-ph-ar="يدوي فقط" data-ph-en="Manual only" id="countryAnnualEToInput" placeholder="يدوي فقط" step="1" type="number"/></label>
+<label><span data-i18n="countryRainLabel">الأمطار P مم/موسم</span><input data-ph-ar="يدوي فقط" data-ph-en="Manual only" id="countryRainInput" placeholder="يدوي فقط" step="0.1" type="number"/></label>
+<label><span data-i18n="countryEaLabel">كفاءة الري Ea</span><input id="countryEaInput" max="1" min="0" placeholder="0.75" step="0.01" type="number"/></label>
+<label><span>Kc</span><input id="countryKcInput" placeholder="Manual only" step="0.01" type="number"/></label>
+<label><span data-i18n="countryDaysLabel">مدة النمو بالأيام</span><input data-ph-ar="يدوي فقط" data-ph-en="Manual only" id="countryDaysInput" placeholder="يدوي فقط" step="1" type="number"/></label>
+<label><span data-i18n="countryYieldLabel">الإنتاجية طن/هكتار</span><input data-ph-ar="يدوي فقط" data-ph-en="Manual only" id="countryYieldInput" placeholder="يدوي فقط" step="0.01" type="number"/></label>
+<label><span data-i18n="countryAreaLabel">المساحة بالفدان</span><input data-ph-ar="اختياري" data-ph-en="Optional" id="countryAreaInput" placeholder="اختياري" step="0.1" type="number"/></label>
+<label><span data-i18n="countryNLabel">معدل النيتروجين كجم/هكتار</span><input data-ph-ar="يدوي فقط" data-ph-en="Manual only" id="countryNitrogenInput" placeholder="يدوي فقط" step="0.1" type="number"/></label>
+<label><span data-i18n="countryCmaxLabel">Cmax كجم/م³</span><input data-ph-ar="يدوي فقط" data-ph-en="Manual only" id="countryCmaxInput" placeholder="يدوي فقط" step="0.001" type="number"/></label>
+<label><span data-i18n="countryCnatLabel">Cnat كجم/م³</span><input data-ph-ar="يدوي فقط" data-ph-en="Manual only" id="countryCnatInput" placeholder="يدوي فقط" step="0.001" type="number"/></label>
+<label><span data-i18n="countryAppliedWaterLabel">المياه المطبقة م³/هكتار</span><input data-ph-ar="إدخال مباشر اختياري" data-ph-en="Optional direct input" id="countryAppliedWaterInput" placeholder="إدخال مباشر اختياري" step="1" type="number"/></label>
+</div>
+<div class="country-note-box" style="margin-top:14px;border:2px solid rgba(34,197,94,.35);background:rgba(34,197,94,.08)">
+<span data-i18n-html="countryAfterInputNote"><strong>بعد إدخال بيانات الدولة والمحصول:</strong> اضغط زر <strong>«احسب نتائج الدولة كاملة الآن»</strong>. ستظهر النتائج داخل صفحة <strong>الدول</strong> نفسها، ويمكنك أيضًا فتح نفس السيناريو في صفحة الحسابات التفصيلية.</span>
+</div>
+<div class="country-calculation-panel" id="countryCalculationPanel">
+<h3 data-i18n="countryResultsTitle">نتائج حساب الدولة المختارة</h3>
+<div class="note" data-i18n="countryScenarioInitial" id="countryScenarioTitle">لم يتم الحساب بعد. اختر الدولة والمحصول وأدخل القيم اليدوية ثم اضغط زر الحساب.</div>
+<div class="country-results-grid">
+<div class="country-result-card"><div class="k">Green WF</div><div class="v" id="countryGreenWF">-</div><small>m³/ton</small></div>
+<div class="country-result-card"><div class="k">Gross Blue WF</div><div class="v" id="countryBlueWF">-</div><small>m³/ton</small></div>
+<div class="country-result-card"><div class="k">Grey WF</div><div class="v" id="countryGreyWF">-</div><small>m³/ton</small></div>
+<div class="country-result-card"><div class="k">Total applied WF</div><div class="v" id="countryTotalWF">-</div><small>m³/ton</small></div>
+<div class="country-result-card"><div class="k">ETc seasonal</div><div class="v" id="countryETc">-</div><small>mm</small></div>
+<div class="country-result-card"><div class="k">GIR</div><div class="v" id="countryGIR">-</div><small>mm</small></div>
+<div class="country-result-card"><div class="k">Production</div><div class="v" id="countryProduction">-</div><small>ton</small></div>
+<div class="country-result-card"><div class="k">Gross irrigation volume</div><div class="v" id="countryIrrigationVolume">-</div><small>m³</small></div>
+</div>
+<div class="table-wrap" style="margin-top:14px">
+<table><tbody id="countryDetailedRows"><tr><td data-i18n="statusLabel">الحالة</td><td data-i18n="countryWaitingCalc">في انتظار إدخال البيانات والحساب.</td></tr></tbody></table>
+</div>
+<div class="country-actions">
+<button data-i18n="openDetailedCalcBtn" id="openCountryCalculationPageBtn" type="button">فتح نفس النتائج في صفحة الحسابات التفصيلية</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="country-table-wrap" style="margin-top:18px">
+<table>
+<thead><tr><th data-i18n="countryNoHeader">م</th><th data-i18n="continentHeader">القارة</th><th data-i18n="countryHeader">الدولة</th><th data-i18n="priorityHeader">الأولوية</th><th data-i18n="mainCropsHeader">أهم المحاصيل</th><th data-i18n="wfRelevanceHeader">صلة البصمة المائية</th></tr></thead>
+<tbody id="countriesRows"></tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+<section class="tab-section hidden" id="calculator">
+<div class="grid main-grid">
+<aside class="card">
+<div class="card-body">
+<div class="toolbar">
+<h2 class="section-title" data-i18n="inputsTitle">المدخلات</h2>
+<button data-i18n="resetBtn" id="resetBtn">إعادة ضبط</button>
+<button class="primary" id="calculateManualBtn" type="button">احسب النتائج / Calculate</button>
+</div>
+<div class="note" id="selectedCountryNote" style="margin-bottom:12px"><strong>الدولة المختارة:</strong> Egypt — اختر المحافظة المصرية من القائمة التالية.</div>
+<label id="governorateInputLabel"><span data-i18n="labelGovernorate">المحافظة / الدولة</span><select id="govSelect"></select></label>
+<label><span data-i18n="labelCrop">المحصول</span><select id="cropSelect"></select></label>
+<label><span>المنتج المستخدم في الحساب / Product basis</span><select id="productSelect"></select></label>
+<label><span data-i18n="labelMethod">طريقة الري</span><select id="methodSelect"></select></label>
+<div class="mini-grid">
+<label><span data-i18n="labelRain">الأمطار الموسمية P (مم)</span><input id="rainInput"/></label>
+<label><span data-i18n="labelEa">كفاءة الري Ea</span><input id="eaInput" max="1" min="0.01" step="0.01" type="number"/></label>
+<label><span data-i18n="labelEt0">متوسط ET0 لعشر سنوات (مم/يوم)</span><input id="et0Input"/></label>
+<label><span data-i18n="labelAnnualETo">ETo السنوي (مم/سنة)</span><input id="annualEToInput"/></label>
+<label><span data-i18n="labelKc">معامل المحصول Kc</span><input id="kcInput"/></label>
+<label><span data-i18n="labelYield">الإنتاجية (طن/هكتار)</span><input id="yieldInput"/></label>
+<label><span data-i18n="labelDays">مدة النمو (يوم)</span><input id="daysInput"/></label>
+</div>
+<label><span data-i18n="labelPeffMode">طريقة المطر الفعال</span>
+<select id="peffMode">
+<option data-i18n="peffAuto" value="Auto">تلقائي من أمطار المحافظة</option>
+<option data-i18n="peffManual" value="Manual">إدخال يدوي</option>
+</select>
+</label>
+<label class="hidden" id="manualPeffBox"><span data-i18n="labelManualPeff">المطر الفعال اليدوي Peff (مم)</span><input id="manualPeff" type="number" value="10"/></label>
+<div class="hybrid-panel" id="hybridInputPanel">
+<h3 class="hybrid-title">إعدادات الإدخال اليدوي الذكي / Manual Input Settings</h3>
+<div class="note" id="calculationModeNote" style="margin-bottom:12px">
+                الوضع الأوتوماتيك يملأ القيم من قاعدة البيانات الداخلية. الوضع اليدوي يترك القيم قابلة للتعديل ويستخدم مدخلات المستخدم في الحسابات.
+              </div>
+<div class="mini-grid">
+<label><span>ETc مباشر اختياري (mm/season)</span><input id="manualETc" min="0" placeholder="Auto from ETo × Kc × days" step="0.1" type="number"/></label>
+<label><span>ETblue مباشر اختياري (mm)</span><input id="manualETBlue" min="0" placeholder="Auto from ETc - Peff" step="0.1" type="number"/></label>
+<label><span>Applied irrigation water (m³/ha)</span><input id="manualAppliedWater" min="0" placeholder="Optional gross applied water" step="1" type="number"/></label>
+<label><span>Total production (ton) اختياري</span><input id="manualProduction" min="0" placeholder="Overrides yield if area is entered" step="0.1" type="number"/></label>
+<label><span>مصدر البيانات / Data source</span>
+<select id="dataSourceType">
+<option value="database">Embedded database</option>
+<option value="field">Measured field data</option>
+<option value="published">Published source</option>
+<option value="estimated">Estimated value</option>
+<option value="assumption">User assumption</option>
+</select>
+</label>
+<label><span>Reference / Notes</span><input id="dataReferenceNote" placeholder="Station, paper, field date, notes..." type="text"/></label>
+</div>
+<div style="margin-top:10px">
+<span class="source-chip" id="dataModeChip">Hybrid mode</span>
+<span class="source-chip">Data Quality: <strong id="dataQualityScore">-</strong>/100</span>
+</div>
+<div class="quality-meter"><span id="dataQualityBar" style="width:0%"></span></div>
+<div class="warning-list hidden" id="validationWarnings"></div>
+</div>
+<div class="enhancement-panel" id="kcStagesPanel">
+<h3>معاملات Kc المرحلية / Stage-based Kc</h3>
+<label class="check-row"><input id="useStageKc" type="checkbox"/> استخدم Kc حسب مراحل النمو بدل Kc متوسط واحد</label>
+<div class="mini-grid">
+<label><span>Kc initial</span><input id="kcIniInput" step="0.01" type="number" value="0.40"/></label>
+<label><span>Days initial</span><input id="daysIniInput" step="1" type="number" value="25"/></label>
+<label><span>Kc development</span><input id="kcDevInput" step="0.01" type="number" value="0.80"/></label>
+<label><span>Days development</span><input id="daysDevInput" step="1" type="number" value="35"/></label>
+<label><span>Kc mid</span><input id="kcMidInput" step="0.01" type="number" value="1.10"/></label>
+<label><span>Days mid</span><input id="daysMidInput" step="1" type="number" value="45"/></label>
+<label><span>Kc late</span><input id="kcLateInput" step="0.01" type="number" value="0.75"/></label>
+<label><span>Days late</span><input id="daysLateInput" step="1" type="number" value="25"/></label>
+</div>
+</div>
+<div class="enhancement-panel" id="demandPlannerPanel">
+<h3>حساب المساحة المطلوبة حسب الاحتياج / Demand-Based Area Planner</h3>
+<div class="note" style="margin-bottom:12px">
+                هذا الجزء إدخاله يدوي بالكامل: أدخل الاحتياج المطلوب من المنتج أو كمية المياه المتاحة، وسيحسب البرنامج المساحة المطلوبة، الإنتاج المتوقع، مياه الري، والبصمة المائية الكلية لنفس سيناريو المحافظة والمحصول وطريقة الري.
+              </div>
+<div class="mini-grid">
+<label><span>نوع الاحتياج / Planning target</span>
+<select id="demandTargetType">
+<option selected="" value="production">احتياج إنتاجي / Required production</option>
+<option value="water">مياه متاحة / Available irrigation water</option>
+<option value="both">إنتاج مطلوب + مياه متاحة / Production + water check</option>
+</select>
+</label>
+<label><span>الاحتياج الإنتاجي المطلوب (طن)</span><input id="targetProductionDemand" min="0" step="0.1" type="number" value="1000"/></label>
+<label><span>كمية مياه الري المتاحة (م³)</span><input id="availableWaterDemand" min="0" step="1" type="number" value="0"/></label>
+<label><span>هامش أمان تخطيطي %</span><input id="planningSafetyMargin" max="100" min="0" step="1" type="number" value="10"/></label>
+</div>
+<div class="pill-row">
+<button class="primary" id="applyDemandAreaBtn" type="button">استخدم المساحة المحسوبة في الحاسبة</button>
+<span class="source-chip">Manual demand input</span>
+<span class="source-chip">Based on current WF scenario</span>
+</div>
+<div class="report-preview" id="demandPlannerSummary" style="margin-top:12px"></div>
+</div>
+<div class="enhancement-panel" id="soilPanel">
+<h3>Soil &amp; Water Quality / التربة والملوحة والإدارة</h3>
+<div class="mini-grid">
+<label><span>Soil texture / قوام التربة</span><select id="soilTextureSelect"><option value="loam">Loam / طميية</option><option value="clay">Clay / طينية</option><option value="sandy">Sandy / رملية</option></select></label>
+<label><span>Soil salinity ECe (dS/m)</span><input id="soilECeInput" min="0" step="0.1" type="number" value="2.0"/></label>
+<label><span>Irrigation water ECw (dS/m)</span><input id="waterECInput" min="0" step="0.1" type="number" value="0.8"/></label>
+<label><span>Soil pH</span><input id="soilPHInput" max="11" min="3" step="0.1" type="number" value="7.5"/></label>
+<label><span>Drainage / الصرف</span><select id="drainageSelect"><option value="good">Good</option><option value="moderate">Moderate</option><option value="poor">Poor</option></select></label>
+<label><span>Management level / مستوى الإدارة</span><select id="managementSelect"><option value="high">High</option><option selected="" value="medium">Medium</option><option value="low">Low</option></select></label>
+</div>
+<div class="quality-meter"><span id="yieldAdjustmentBar" style="width:100%"></span></div>
+<div class="warning-list" id="yieldAdjustmentNote" style="display:block"></div>
+</div>
+<div class="mini-grid">
+<label><span data-i18n="labelArea">المساحة المزروعة (فدان)</span><input id="areaInput" min="0" step="1" type="number" value="100"/></label>
+<label><span data-i18n="labelScenario">سيناريو الأمطار</span>
+<select id="rainScenario">
+<option data-i18n="scenarioDry" value="0.75">جاف</option>
+<option data-i18n="scenarioNormal" selected="" value="1">متوسط</option>
+<option data-i18n="scenarioWet" value="1.25">رطب</option>
+</select>
+</label>
+<label><span data-i18n="labelCustomYield">إنتاجية قابلة للتعديل (طن/هكتار)</span><input id="customYieldInput" min="0.01" step="0.1" type="number"/></label>
+<label><span data-i18n="labelNitrogen">معدل التسميد N / AR (كجم/هكتار)</span><input id="nitrogenInput" min="0" step="1" type="number"/></label>
+<label><span>Cmax (kg/m³)</span><input id="cmaxInput" min="0.0001" step="0.001" type="number"/></label>
+<label><span>Cnat (kg/m³)</span><input id="cnatInput" min="0" step="0.001" type="number"/></label>
+</div>
+<div class="note" id="govNote"></div>
+<div class="formula">
+<strong data-i18n="coreFormulas">المعادلات الأساسية</strong><br/>
+              ETc = ET0 × Kc × Growing days<br/>
+              Peff = Seasonal rainfall × effective rainfall fraction<br/>
+              Net Blue WF = (ETblue × 10) / Yield<br/>
+              Gross Blue WF = (ETblue / Ea × 10) / Yield<br/>
+              Total applied WF = Green WF + Gross Blue WF + Grey WF<br/>
+              Water saving = ((GIRflood − GIRselected) / GIRflood) × 100
+            </div>
+<div class="formula" id="cropProductInfo">
+<strong>Crop-product database link</strong><br/>
+<span id="productInfoText">-</span>
+</div>
+</div>
+</aside>
+<main>
+<div class="kpi-grid">
+<div class="kpi"><div class="icon">🌿</div><div class="title" data-i18n="greenWF">البصمة الخضراء</div><div class="value" id="greenWF">-</div><div class="unit">m³/ton = L/kg</div></div>
+<div class="kpi"><div class="icon">💧</div><div class="title" data-i18n="netBlueWF">البصمة الزرقاء الصافية</div><div class="value" id="netBlueWF">-</div><div class="unit">m³/ton = L/kg</div></div>
+<div class="kpi"><div class="icon">🚿</div><div class="title" data-i18n="grossBlueWF">البصمة الزرقاء المعدلة بكفاءة الري</div><div class="value" id="blueWF">-</div><div class="unit">m³/ton = L/kg</div></div>
+<div class="kpi"><div class="icon">🌧️</div><div class="title" data-i18n="greyWF">البصمة الرمادية</div><div class="value" id="greyWF">-</div><div class="unit">m³/ton = L/kg</div></div>
+<div class="kpi"><div class="icon">📊</div><div class="title" data-i18n="totalWF">إجمالي البصمة المائية</div><div class="value" id="totalWF">-</div><div class="unit">m³/ton = L/kg</div></div>
+<div class="kpi"><div class="icon">💦</div><div class="title" data-i18n="waterSaving">توفير المياه مقارنة بالغمر</div><div class="value" id="waterSaving">-</div><div class="unit">%</div></div>
+</div>
+<div class="decision-panel">
+<div class="toolbar">
+<h2 class="section-title" data-i18n="decisionTitle">ملخص القرار والتوصية</h2>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="primary" data-i18n="printReport" id="printReportBtn">طباعة / حفظ PDF</button>
+<button data-i18n="exportIrrigation" id="exportIrrigationCSV">تصدير مقارنة الري CSV</button>
+</div>
+</div>
+<div id="decisionSummary" style="line-height:1.8"></div>
+<div class="decision-grid" style="margin-top:12px">
+<div class="card" style="box-shadow:none"><div class="card-body"><h2 class="section-title" data-i18n="classificationTitle">التصنيف</h2><div id="classificationBox"></div></div></div>
+<div class="card" style="box-shadow:none"><div class="card-body"><h2 class="section-title" data-i18n="farmScaleTitle">تقدير على مستوى المساحة</h2><div id="farmScaleBox"></div><div class="formula" id="demandPlannerMiniBox" style="margin-top:12px"></div></div></div>
+<div class="card" style="box-shadow:none"><div class="card-body"><h2 class="section-title" data-i18n="recommendationTitle">توصية مختصرة</h2><div id="recommendationBox"></div></div></div>
+</div>
+<div class="table-wrap" style="margin-top:14px"><table><thead><tr><th data-i18n="labelMethod">طريقة الري</th><th> Ea </th><th data-i18n="grossBlueWF">Gross Blue WF</th><th data-i18n="tableTotalWF">Total applied WF</th><th data-i18n="calcGIR">GIR</th><th data-i18n="waterSaving">Water saving</th></tr></thead><tbody id="irrigationRows"></tbody></table></div>
+</div>
+<div class="chart-grid">
+<div class="card"><div class="card-body"><h2 class="section-title" data-i18n="wfComponents">مكونات البصمة المائية</h2><div class="chart-box"><canvas id="pieChart"></canvas></div></div></div>
+<div class="card"><div class="card-body"><h2 class="section-title" data-i18n="detailedCalcs">الحسابات التفصيلية</h2><div class="table-wrap"><table><tbody id="calcRows"></tbody></table></div></div></div>
+</div>
+<div class="card" id="irrigationCalendarCard"><div class="card-body">
+<h2 class="section-title" id="calTitle">جدول الري الزمني / Irrigation Calendar</h2>
+<div class="note" id="calIntro" style="margin-bottom:12px"></div>
+<div class="mini-grid">
+<label><span id="calStartLabel"></span><select id="calStartMonth"></select></label>
+<label><span id="calNetDepthLabel"></span><input id="calNetDepth" min="10" step="5" type="number" value="50"/></label>
+<button class="primary" id="calExportCsv" style="align-self:end"></button>
+</div>
+<div class="recommend-grid" id="calKpis" style="margin:14px 0"></div>
+<div class="table-wrap"><table><thead id="calStageHead"></thead><tbody id="calStageRows"></tbody></table></div>
+<div class="chart-box" style="margin-top:16px"><canvas id="calChart"></canvas></div>
+<h3 class="section-title" id="calMonthTitle" style="font-size:16px;margin-top:16px"></h3>
+<div class="table-wrap"><table><thead id="calMonthHead"></thead><tbody id="calMonthRows"></tbody></table></div>
+</div></div>
+</main>
+</div>
+</section>
+<section class="tab-section hidden" id="comparison">
+<div class="card">
+<div class="card-body">
+<div class="toolbar">
+<h2 class="section-title" id="comparisonTitle">مقارنة المحافظات</h2>
+<button class="primary" data-i18n="exportCSV" id="exportComparison">تصدير CSV</button>
+</div>
+<div class="card" style="box-shadow:none;background:#f8fafc;margin-bottom:18px">
+<div class="card-body">
+<div class="toolbar">
+<div>
+<h2 class="section-title" data-i18n="optimalTitle" style="margin-bottom:6px">التوزيع الأمثل للمحافظات للمحصول المختار</h2>
+<div data-i18n="optimalSubtitle" style="color:var(--muted);font-size:14px;line-height:1.7">
+                    توزيع مقترح لأفضل المحافظات لزراعة المحصول المختار بناءً على أقل Total applied WF، ثم توزيع المساحة المطلوبة حسب مساحة الأراضي القابلة للزراعة المتاحة بكل محافظة من ملف CAPMAS المرفق.
+                  </div>
+</div>
+<button data-i18n="exportOptimal" id="exportOptimal">تصدير التوزيع CSV</button>
+</div>
+<div class="mini-grid" style="margin-bottom:16px">
+<label><span data-i18n="targetAreaLabel">المساحة المطلوب زراعتها (فدان)</span><input id="targetAreaInput" min="0" step="1000" type="number" value="1000000"/></label>
+<label><span data-i18n="topNLabel">عدد أفضل المحافظات</span><input id="topNGovInput" max="33" min="1" step="1" type="number" value="3"/></label>
+</div>
+<div class="note" data-i18n="distributionLogic" style="margin-bottom:16px">
+                منطق التوزيع: يتم ترتيب المحافظات مائيًا حسب أقل Total applied WF، ثم اختيار أفضل N محافظات، ثم توزيع المساحة المطلوبة بينها بنسبة مساحة الأراضي القابلة للزراعة لكل محافظة. في حالة أن المطلوب أكبر من إجمالي المساحة المتاحة في المحافظات المختارة، يتم إظهار العجز.
+              </div>
+<div class="recommend-grid">
+<div class="recommend-card"><div class="small" data-i18n="bestGovCard">أفضل محافظة</div><div class="big" id="bestGov">-</div></div>
+<div class="recommend-card"><div class="small" data-i18n="bestAllocatedCard">المساحة المخصصة لأفضل محافظة</div><div class="big" id="bestShare">-</div><div class="small" data-i18n="unitFeddan">فدان</div></div>
+<div class="recommend-card"><div class="small" data-i18n="selectedCapacityCard">إجمالي المساحة المتاحة المختارة</div><div class="big" id="bestWF">-</div><div class="small" data-i18n="unitFeddan">فدان</div></div>
+<div class="recommend-card"><div class="small" data-i18n="uncoveredCard">المساحة غير المغطاة</div><div class="big" id="suggestedCount">-</div><div class="small" data-i18n="unitFeddan">فدان</div></div>
+</div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th data-i18n="tableRank">الترتيب</th>
+<th data-i18n="tableGovernorate">المحافظة</th>
+<th data-i18n="tableRegion">الإقليم</th>
+<th data-i18n="tableTotalWF">إجمالي WF</th>
+<th data-i18n="tableWPI">مؤشر إنتاجية المياه</th>
+<th data-i18n="tableArable">المساحة القابلة للزراعة</th>
+<th data-i18n="tableCapacityShare">نسبة السعة</th>
+<th data-i18n="tableAllocated">المساحة المخصصة</th>
+<th data-i18n="tableAllocationShare">نسبة التوزيع</th>
+<th data-i18n="tableVisual">مؤشر بصري</th>
+</tr>
+</thead>
+<tbody id="optimalRows"></tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="card" id="cropAllocationPanel" style="box-shadow:none;background:#f8fafc;margin-bottom:18px">
+<div class="card-body">
+<div class="toolbar">
+<div>
+<h2 class="section-title" style="margin-bottom:6px">توزيع المحاصيل على المساحات المختلفة / Multi-Crop Area Allocation</h2>
+<div style="color:var(--muted);font-size:14px;line-height:1.7">
+                    هذا الاختيار يوزع المساحة بين أكثر من محصول ومحافظة طبقًا لأقل بصمة مائية، درجة الملاءمة، المساحة القابلة للزراعة، وقيود المياه المتاحة. النتيجة توضح هل كل محصول مناسب زراعته في المحافظة المختارة أم لا.
+                  </div>
+</div>
+<button id="exportCropAllocation">تصدير توزيع المحاصيل CSV</button>
+</div>
+<div class="mini-grid" style="margin-bottom:16px">
+<label><span>إجمالي المساحة المراد توزيعها (فدان)</span><input id="multiCropTargetArea" min="0" step="1000" type="number" value="100000"/></label>
+<label><span>إجمالي مياه الري المتاحة للتوزيع (م³) — اختياري</span><input id="multiCropAvailableWater" min="0" step="1000" type="number" value="0"/></label>
+<label><span>أقل درجة ملاءمة مقبولة /100</span><input id="minSuitabilityAllocation" max="100" min="0" step="1" type="number" value="55"/></label>
+<label><span>أقصى عدد تركيبات محصول × محافظة</span><input id="maxAllocationOptions" max="80" min="1" step="1" type="number" value="12"/></label>
+</div>
+<div class="note" style="margin-bottom:16px">
+                منطق التوزيع: يحسب البرنامج كل تركيبات المحاصيل × المحافظات، ثم يرتبها حسب درجة الملاءمة ثم الأقل في Total applied WF. يتم تخصيص المساحة تدريجيًا مع عدم تجاوز المساحة القابلة للزراعة بكل محافظة وعدم تجاوز المياه المتاحة إذا تم إدخالها.
+              </div>
+<div class="recommend-grid">
+<div class="recommend-card"><div class="small">إجمالي المساحة المخصصة</div><div class="big" id="allocatedCropAreaCard">-</div><div class="small">فدان</div></div>
+<div class="recommend-card"><div class="small">المساحة غير المخصصة</div><div class="big" id="unallocatedCropAreaCard">-</div><div class="small">فدان</div></div>
+<div class="recommend-card"><div class="small">مياه الري المطلوبة</div><div class="big" id="allocationWaterCard">-</div><div class="small">م³</div></div>
+<div class="recommend-card"><div class="small">أفضل توصية</div><div class="big" id="bestCropAllocationCard">-</div></div>
+</div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>الترتيب</th>
+<th>المحافظة</th>
+<th>المحصول</th>
+<th>حالة الملاءمة</th>
+<th>Suitability</th>
+<th>Total applied WF</th>
+<th>GIR</th>
+<th>المساحة المخصصة</th>
+<th>المياه المطلوبة</th>
+<th>الإنتاج المتوقع</th>
+<th>سبب القرار</th>
+</tr>
+</thead>
+<tbody id="cropAllocationRows"></tbody>
+</table>
+</div>
+<div class="table-wrap" style="margin-top:14px">
+<table>
+<thead><tr><th>غير مناسب / منخفض الملاءمة</th><th>المحافظة</th><th>Suitability</th><th>Total applied WF</th><th>سبب الاستبعاد</th></tr></thead>
+<tbody id="cropUnsuitableRows"></tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="chart-box"><canvas id="barChart"></canvas></div>
+<div class="table-wrap" style="margin-top:18px">
+<table>
+<thead><tr><th data-i18n="tableGovernorate">المحافظة</th><th data-i18n="tableRegion">الإقليم</th><th data-i18n="tableArable">المساحة القابلة للزراعة</th><th>Avg ETo mm/day</th><th>Annual ETo mm</th><th>Rain P</th><th data-i18n="greenWF">البصمة الخضراء</th><th data-i18n="netBlueWF">Net Blue WF</th><th data-i18n="grossBlueWF">Gross Blue WF</th><th data-i18n="greyWF">البصمة الرمادية</th><th data-i18n="tableTotalWF">إجمالي WF</th></tr></thead>
+<tbody id="comparisonRows"></tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+<section class="tab-section hidden" id="advancedAnalytics">
+<div class="grid chart-grid">
+<div class="card">
+<div class="card-body">
+<div class="toolbar">
+<div>
+<h2 class="section-title">خريطة ملاءمة المحافظات / Governorate Suitability Map</h2>
+<div style="color:var(--muted);font-size:14px;line-height:1.7">ألوان النقاط تمثل درجة الملاءمة للمحصول المختار وفقًا للبصمة المائية، كفاءة الري، الإنتاجية، والمساحة القابلة للزراعة. اضغط على أي محافظة لتحديدها في الحاسبة.</div>
+</div>
+<button class="primary" id="exportScientificReportBtn">تقرير PDF علمي</button>
+</div>
+<div class="map-wrap"><svg aria-label="Egypt governorate suitability map" class="egypt-map" id="egyptSuitabilityMap" role="img" viewbox="0 0 720 500"></svg></div>
+<div class="pill-row" id="mapLegend"></div>
+</div>
+</div>
+<div class="card">
+<div class="card-body">
+<h2 class="section-title">Suitability Score</h2>
+<div class="score-ring" id="suitabilityRing"><div class="score-ring-inner"><div><span id="suitabilityScoreValue">-</span><small>/100</small></div></div></div>
+<div id="suitabilityDetails" style="margin-top:14px;line-height:1.9"></div>
+<div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Component</th><th>Score</th><th>Weight</th><th>Contribution</th></tr></thead><tbody id="suitabilityRows"></tbody></table></div>
+</div>
+</div>
+</div>
+<div class="grid chart-grid" style="margin-top:18px">
+<div class="card">
+<div class="card-body">
+<h2 class="section-title">Climate Scenario Analysis</h2>
+<div class="note" style="margin-bottom:14px">السيناريوهات تحسب تأثير تغير ETo والأمطار على البصمة المائية والاحتياجات الإجمالية للري.</div>
+<div class="table-wrap"><table><thead><tr><th>Scenario</th><th>ETo change</th><th>Rain change</th><th>Total applied WF</th><th>GIR</th><th>Change vs current</th></tr></thead><tbody id="scenarioRows"></tbody></table></div>
+</div>
+</div>
+<div class="card">
+<div class="card-body">
+<h2 class="section-title">Sensitivity Analysis</h2>
+<div class="chart-box"><canvas id="sensitivityChart"></canvas></div>
+<div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Parameter</th><th>-10%</th><th>+10%</th><th>Impact range</th><th>Sensitivity</th></tr></thead><tbody id="sensitivityRows"></tbody></table></div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:18px">
+<div class="card-body">
+<div class="toolbar">
+<div>
+<h2 class="section-title">Research-Grade Advanced Analytics</h2>
+<div style="color:var(--muted);font-size:14px;line-height:1.7">وحدات إضافية متقدمة: أوزان MCDA قابلة للتعديل، عدم اليقين، ترتيب المحاصيل، ترتيب المحافظات، وسيناريو مخصص.</div>
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button id="exportAdvancedCSVBtn">تصدير نتائج متقدمة CSV</button>
+<button id="exportAdvancedJSONBtn">تصدير ملف JSON</button>
+<button class="primary" id="exportExcelWorkbookBtn">تصدير Excel Workbook</button>
+<button id="saveScenarioBrowserBtn">حفظ السيناريو</button>
+<button id="loadScenarioBrowserBtn">استرجاع السيناريو</button>
+<button id="importScenarioBtn">استيراد سيناريو JSON</button>
+<input accept="application/json,.json" id="scenarioImportInput" style="display:none" type="file"/>
+</div>
+</div>
+<div class="advanced-panel">
+<h2 class="section-title" style="font-size:18px">MCDA Weight Calibration</h2>
+<div class="note">عدّل الأوزان لتغيير منطق Suitability Score. البرنامج يقوم بتطبيع الأوزان تلقائيًا بحيث يكون مجموعها 100%.</div>
+<div class="weight-grid">
+<label class="weight-card"><span>Total applied WF weight</span><input class="mcdaWeight" id="wWF" max="100" min="0" step="1" type="number" value="35"/></label>
+<label class="weight-card"><span>GIR weight</span><input class="mcdaWeight" id="wGIR" max="100" min="0" step="1" type="number" value="25"/></label>
+<label class="weight-card"><span>Efficiency weight</span><input class="mcdaWeight" id="wEA" max="100" min="0" step="1" type="number" value="20"/></label>
+<label class="weight-card"><span>Arable land weight</span><input class="mcdaWeight" id="wAREA" max="100" min="0" step="1" type="number" value="10"/></label>
+<label class="weight-card"><span>Grey WF weight</span><input class="mcdaWeight" id="wGREY" max="100" min="0" step="1" type="number" value="10"/></label>
+</div>
+<div id="mcdaWeightNote" style="margin-top:10px;color:var(--muted);font-weight:800"></div>
+</div>
+<div class="grid chart-grid" style="margin-top:18px">
+<div class="advanced-panel">
+<h2 class="section-title" style="font-size:18px">Monte Carlo Uncertainty Analysis</h2>
+<div class="note">تحليل تقريبي لعدم اليقين يعتمد على تغيّر ETo وKc والإنتاجية وEa ومعدل N داخل نطاقات محددة.</div>
+<div class="mini-grid" style="margin-top:12px">
+<label><span>عدد المحاكاة</span><input id="mcRuns" max="3000" min="100" step="100" type="number" value="500"/></label>
+<label><span>نطاق عدم اليقين ±%</span><input id="mcRange" max="40" min="1" step="1" type="number" value="10"/></label>
+</div>
+<div class="chart-box"><canvas id="monteCarloChart"></canvas></div>
+<div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Metric</th><th>P5</th><th>Median</th><th>P95</th><th>Range</th></tr></thead><tbody id="monteCarloRows"></tbody></table></div>
+</div>
+<div class="advanced-panel">
+<h2 class="section-title" style="font-size:18px">Custom Scenario Builder</h2>
+<div class="scenario-builder">
+<label><span>ETo change %</span><input id="customEtoPct" step="1" type="number" value="15"/></label>
+<label><span>Rain change %</span><input id="customRainPct" step="1" type="number" value="-10"/></label>
+<label><span>Yield change %</span><input id="customYieldPct" step="1" type="number" value="0"/></label>
+<label><span>Ea change %</span><input id="customEaPct" step="1" type="number" value="0"/></label>
+</div>
+<div class="report-preview" id="customScenarioBox"></div>
+</div>
+</div>
+<div class="grid chart-grid" style="margin-top:18px">
+<div class="advanced-panel">
+<h2 class="section-title" style="font-size:18px">Crop Ranking in Selected Governorate</h2>
+<div class="table-wrap"><table><thead><tr><th>Rank</th><th>Crop</th><th>Total applied WF</th><th>GIR</th><th>Suitability</th><th>Recommendation</th></tr></thead><tbody id="cropRankingRows"></tbody></table></div>
+</div>
+<div class="advanced-panel">
+<h2 class="section-title" style="font-size:18px">Governorate Ranking by Suitability</h2>
+<div class="chart-box"><canvas id="govScoreChart"></canvas></div>
+<div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Rank</th><th>Governorate</th><th>Score</th><th>Total applied WF</th><th>Arable land</th></tr></thead><tbody id="govRankingRows"></tbody></table></div>
+</div>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:18px">
+<div class="card-body">
+<div class="toolbar">
+<h2 class="section-title">Scientific PDF Report Preview</h2>
+<button id="openScientificReportBtn">فتح التقرير للطباعة / PDF</button>
+</div>
+<div class="report-preview" id="scientificReportPreview"></div>
+</div>
+</div>
+</section>
+<section class="tab-section hidden" id="economicsRisk">
+<div class="grid chart-grid">
+<div class="card"><div class="card-body">
+<h2 class="section-title">Economic Water Productivity / اقتصاديات إنتاجية المياه</h2>
+<div class="note" style="margin-bottom:14px">هذه الوحدة تربط قرار الزراعة بالمياه والربحية معًا: العائد لكل متر مكعب، الربح لكل متر مكعب، تكلفة إنتاج الطن، وتكلفة المياه لكل طن.</div>
+<div class="mini-grid">
+<label><span>سعر بيع المنتج المختار (جنيه/طن أو جنيه/وحدة المنتج)</span><input id="priceInput" min="0" step="1" type="number" value="12000"/></label>
+<label><span>تكلفة الزراعة للفدان بدون تكلفة المياه (جنيه/فدان)</span><input id="costFeddanInput" min="0" step="1" type="number" value="22000"/></label>
+<label><span>تكلفة المياه (جنيه/م³)</span><input id="waterCostInput" min="0" step="0.01" type="number" value="0"/></label>
+<label><span>مخاطر السوق السعرية %</span><input id="marketRiskInput" max="100" min="0" step="1" type="number" value="25"/></label>
+</div>
+<div class="triple-grid" id="economicCards" style="margin-top:14px"></div>
+<div class="table-wrap" style="margin-top:14px"><table><tbody id="economicRows"></tbody></table></div>
+</div></div>
+<div class="card"><div class="card-body">
+<h2 class="section-title">Risk &amp; Suitability Diagnostics / تشخيص المخاطر والملاءمة</h2>
+<div class="triple-grid" id="riskCards"></div>
+<div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Risk factor</th><th>Score</th><th>Interpretation</th></tr></thead><tbody id="riskRows"></tbody></table></div>
+<div class="note" id="enhancedRecommendation" style="margin-top:14px"></div>
+</div></div>
+</div>
+</section>
+<section class="tab-section hidden" id="methodologySources">
+<div class="card"><div class="card-body">
+<div class="toolbar">
+<h2 class="section-title" data-i18n="methodologyTitle">المنهجية والمعادلات والمصادر</h2>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="primary" data-i18n="exportScenarioJSON" id="exportFullJSONBtn">تصدير سيناريو JSON</button>
+<button id="exportExcelWorkbookBtn2">تصدير Excel</button>
+<button data-i18n="saveScenario" id="saveScenarioBrowserBtn2">حفظ السيناريو</button>
+<button data-i18n="loadScenario" id="loadScenarioBrowserBtn2">استرجاع السيناريو</button>
+</div>
+</div>
+<div class="grid chart-grid">
+<div class="report-preview">
+<h2 data-i18n="coreEquationsTitle">المعادلات الأساسية</h2>
+<p><strong>ETc</strong> = ETo × Kc × days، أو مجموع مراحل النمو عند تفعيل Kc المرحلي.</p>
+<p><strong>Peff</strong> = rainfall × effective rainfall fraction، أو قيمة يدوية عند اختيار Manual Peff.</p>
+<p><strong>Green WF</strong> = ETgreen × 10 / yield.</p>
+<p><strong>Net Blue WF</strong> = ETblue × 10 / yield.</p>
+<p><strong>Gross Blue WF</strong> = (ETblue / Ea) × 10 / yield.</p>
+<p><strong>Grey WF</strong> = α × AR / ((Cmax − Cnat) × yield).</p>
+<p><strong>Adjusted yield</strong> = database/manual yield × soil factor × salinity factor × drainage factor × management factor.</p>
+</div>
+<div class="report-preview">
+<h2 data-i18n="dataLayersTitle">طبقات البيانات</h2>
+<p><strong>Climate:</strong> governorate ETo 10-year database embedded in the tool.</p>
+<p><strong>Crop database:</strong> crop/product table with main and secondary products, units, data type, and source code.</p>
+<p><strong>Automatic mode:</strong> uses embedded governorate, crop, product and irrigation data.</p>
+<p><strong>Manual mode:</strong> uses user-entered data, including optional direct ETc, ETblue and applied irrigation water.</p>
+<p><strong>Source codes:</strong> MALR-Stats, MALR-Cost, CAPMAS, Indicative/Extension.</p>
+</div>
+</div>
+<div class="card" style="box-shadow:none;margin-top:18px"><div class="card-body">
+<h2 class="section-title" data-i18n="currentScenarioAuditTitle">تدقيق السيناريو الحالي</h2>
+<div class="table-wrap"><table><tbody id="methodologyAuditRows"></tbody></table></div>
+</div></div>
+<div class="grid chart-grid" style="margin-top:18px">
+<div class="card" style="box-shadow:none"><div class="card-body">
+<h2 class="section-title" data-i18n="sourceConfidenceTitle">مصفوفة ثقة المصادر</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Data layer</th><th>Primary source</th><th>Period / basis</th><th>Confidence</th><th>Use in model</th></tr></thead>
+<tbody id="sourceConfidenceRows"></tbody>
+</table></div>
+</div></div>
+<div class="card" style="box-shadow:none"><div class="card-body">
+<h2 class="section-title" data-i18n="limitationsValidationTitle">حدود الاستخدام والتحقق</h2>
+<div class="warning-list" style="background:#f8fafc;border-color:#cbd5e1;color:#334155">
+<strong>Important:</strong> النتائج تقديرية لدعم القرار وليست بديلًا عن القياسات الحقلية. قبل الاستخدام النهائي يجب مراجعة المطر المحلي، جودة مياه الري، الملوحة، الأسعار، والإنتاجية الفعلية للمزرعة. المناطق الزراعية غير الإدارية تُستخدم كوحدات تخطيطية فقط. صفحة الدول تعمل كحاسبة يدوية موثقة لـ80 دولة وليست قاعدة بيانات عالمية افتراضية؛ يجب إدخال وتوثيق بيانات الدولة والمحصول يدويًا.
+            </div>
+<div class="table-wrap" style="margin-top:12px"><table>
+<thead><tr><th>Validation item</th><th>Recommended check</th><th>Status</th></tr></thead>
+<tbody id="validationChecklistRows"></tbody>
+</table></div>
+</div></div>
+</div>
+<div class="card" style="box-shadow:none;margin-top:18px"><div class="card-body">
+<h2 class="section-title" data-i18n="natureReadinessTitle">جاهزية Nature Water وإعادة الإنتاج المفتوح</h2>
+<div class="warning-list" style="background:#ecfdf5;border-color:#86efac;color:#14532d">
+<strong>Publication scope note:</strong> The Egypt governorate workflow is the validated demonstration pathway. The 80-country page is an optional manual-input extension for teaching and scenario design only. The HTML code, benchmark dataset and exported scenario files have been archived on Zenodo: Mahmoud, M. (2026). Water Footprint Decision Tool: Software Release v1.0. Zenodo. https://doi.org/10.5281/zenodo.20574912.
+          </div>
+<div class="table-wrap" style="margin-top:12px"><table>
+<thead><tr><th>Nature Water requirement</th><th>Tool support</th><th>Action before submission</th></tr></thead>
+<tbody>
+<tr><td>Broad scientific message</td><td>Separates crop-climate demand from gross/applied irrigation water.</td><td>Frame Egypt as a water-scarce demonstration case, not as the only application.</td></tr>
+<tr><td>Reproducibility</td><td>Exports JSON, CSV, Excel workbook and printable scientific report.</td><td>Archived release DOI: https://doi.org/10.5281/zenodo.20574912</td></tr>
+<tr><td>Validation</td><td>Default-mode plausibility, published WF benchmark comparison and manual scenario-matched checks are supported.</td><td>Report agreement/difference after aligning component, yield denominator and irrigation method; add CROPWAT/AquaCrop cross-checks when possible.</td></tr>
+<tr><td>Policy relevance</td><td>Reports ranking, suitability, risk, applied-water saving and demand-based area planning.</td><td>State that outputs are screening-level and require local validation for final decisions.</td></tr>
+</tbody>
+</table></div>
+</div></div>
+<div class="card" style="box-shadow:none;margin-top:18px"><div class="card-body">
+<h2 class="section-title" data-i18n="scenarioManagementTitle">إدارة السيناريوهات</h2>
+<div class="note" data-i18n="scenarioManagementNote">يمكنك تصدير السيناريو كاملًا JSON أو Excel، حفظ آخر سيناريو داخل المتصفح، واستيراده لاحقًا لإعادة نفس الحسابات.</div>
+<div class="pill-row">
+<button class="primary" id="exportFullJSONBtn2">Export JSON</button>
+<button id="exportExcelWorkbookBtn3">Export Excel Workbook</button>
+<button id="saveScenarioBrowserBtn3">Save in browser</button>
+<button id="loadScenarioBrowserBtn3">Load saved scenario</button>
+<button id="importScenarioBtn2">Import JSON</button>
+</div>
+<div class="formula" data-i18n="scenarioStatusInitial" id="scenarioStatusBox" style="margin-top:12px">لم يتم استيراد أو حفظ أي سيناريو في هذه الجلسة.</div>
+</div></div>
+</div></div>
+</section>
+<section class="tab-section hidden" id="eto10years">
+<div class="card">
+<div class="card-body">
+<div class="toolbar">
+<div>
+<h2 class="section-title" data-i18n="etoTitle">قاعدة بيانات ETo لعشر سنوات حسب المحافظة</h2>
+<div data-i18n="etoSubtitle" style="color:var(--muted);font-size:14px;line-height:1.7">
+                البيانات مستخرجة من الملف المرفق: متوسطات ETo الشهرية والسنوية لكل محافظة خلال الفترة 2016–2025.
+              </div>
+</div>
+<button class="primary" data-i18n="exportETo" id="exportEToMonthly">تصدير ETo الشهري CSV</button>
+</div>
+<div class="recommend-grid">
+<div class="recommend-card"><div class="small" data-i18n="datasetPeriod">فترة البيانات</div><div class="big">2016–2025</div></div>
+<div class="recommend-card"><div class="small" data-i18n="governoratesCard">عدد المحافظات/المناطق</div><div class="big">33</div></div>
+<div class="recommend-card"><div class="small" data-i18n="monthlyRecords">السجلات الشهرية</div><div class="big">324</div><div class="small">27 × 12 averaged months</div></div>
+<div class="recommend-card"><div class="small" data-i18n="usedInCalculator">مستخدم في الحاسبة</div><div class="big">ET0</div><div class="small">Avg ETo mm/day</div></div>
+</div>
+<div class="chart-grid">
+<div class="card" style="box-shadow:none">
+<div class="card-body">
+<div class="toolbar">
+<h2 class="section-title" data-i18n="monthlyProfile">منحنى ETo الشهري</h2>
+<label style="min-width:260px"><span data-i18n="labelGovernorate">المحافظة</span><select id="etoGovSelect"></select></label>
+</div>
+<div class="chart-box"><canvas id="etoMonthlyChart"></canvas></div>
+</div>
+</div>
+<div class="card" style="box-shadow:none">
+<div class="card-body">
+<h2 class="section-title" data-i18n="monthlyAverages">جدول المتوسطات الشهرية</h2>
+<div class="table-wrap"><table><thead><tr><th data-i18n="monthHeader">الشهر</th><th>ETo mm/day</th><th>ETo month mm</th><th>Tmin °C</th><th>Tmax °C</th><th>RH %</th><th>Wind m/s</th><th>Sunshine h</th></tr></thead><tbody id="etoMonthlyRows"></tbody></table></div>
+</div>
+</div>
+</div>
+<div class="card" style="box-shadow:none;margin-top:18px">
+<div class="card-body">
+<h2 class="section-title" data-i18n="annualSummary">ملخص ETo السنوي المستخدم في البرنامج</h2>
+<div class="table-wrap"><table><thead><tr><th data-i18n="tableGovernorate">المحافظة</th><th data-i18n="stationHeader">المحطة</th><th data-i18n="tableRegion">الإقليم</th><th data-i18n="yearsHeader">السنوات</th><th>Avg ETo mm/day</th><th>Annual ETo mm</th><th data-i18n="maxMonthlyHeader">أعلى ETo شهري</th><th data-i18n="minMonthlyHeader">أقل ETo شهري</th><th data-i18n="peakMonthHeader">شهر الذروة</th></tr></thead><tbody id="etoAnnualRows"></tbody></table></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="tab-section hidden" id="database">
+<div class="grid chart-grid">
+<div class="card"><div class="card-body"><h2 class="section-title" data-i18n="govDbTitle">قاعدة بيانات المناخ والمساحات القابلة للزراعة</h2><div class="dev-note" data-i18n="developerOnlyNote">هذا القسم مخصص للمطور فقط ومحمي بكلمة مرور.</div><div class="note" data-i18n="databaseNote" style="margin-bottom:14px">
+          مصدر ETo: ملف العمل المرفق ETo_Egypt_Governorates_10_Years. مصدر المساحات: نشرة الإحصاءات الزراعية، وزارة الزراعة واستصلاح الأراضي، قطاع الشئون الاقتصادية، 2020/2021، جدول 17 (إجمالي المساحة المنزرعة)، مع إدراج النوبارية والمشروعات الزراعية الكبرى ضمن قائمة المحافظات كمناطق تخطيط غير محافظات قياسية. بيانات الأمطار إقليمية افتراضية ويجب مراجعتها بمحطات محلية قبل التخطيط النهائي.
+        </div><div class="table-wrap"><table id="govTable"></table></div></div></div>
+<div class="card"><div class="card-body"><h2 class="section-title" data-i18n="cropDbTitle">قاعدة بيانات المحاصيل</h2><div class="table-wrap"><table id="cropsTable"></table></div></div></div>
+</div>
+</section>
+<div class="footer" data-i18n="footerText">
+      تم تطوير البرنامج لتقييم البصمة المائية للمحاصيل على مستوى محافظات مصر، مع تحديث طبقة المساحات والخريطة الزراعية طبقًا لإجمالي المساحة المنزرعة الرسمية 2020/2021 ومشروعات الاستصلاح الجديدة. قيم ETo معايرة من ملف المحافظات لعشر سنوات، ويجب التحقق من بيانات الأمطار وETo محليًا قبل التخطيط النهائي.
+    </div>
+</div>
+<div aria-hidden="true" class="fs-map-overlay" id="fullscreenMapOverlay">
+<main class="fs-map-stage"><div class="fs-map-topbar"><div><div class="fs-map-title" id="fsMapTitle">خريطة ملاءمة المحافظات بملء الشاشة</div><div class="fs-map-subtitle" id="fsMapSubtitle">أفضل وأسوأ المحافظات طبقًا للمحصول وطريقة الري الحالية</div></div><div class="fs-map-actions"><button id="fsMapZoomIn" type="button">+</button><button id="fsMapZoomOut" type="button">−</button><button id="fsMapZoomReset" type="button">100%</button><button class="primary" id="fsMapExportCsv" type="button">تصدير CSV</button><button class="close" id="fsMapClose" type="button">إغلاق Esc</button></div></div><div class="fs-map-canvas-wrap"><div id="fsMapCanvas"></div><div class="fs-map-help" id="fsMapHelp">اسحب الخريطة واستخدم عجلة الفأرة للتكبير</div></div></main>
+<aside class="fs-map-side"><div class="fs-side-head"><div><h3 id="fsSideTitle">ترتيب المحافظات</h3><p id="fsSideSubtitle">حسب Suitability Score للحالة الحالية</p></div></div><div class="fs-kpi-row"><div class="fs-kpi"><div class="label" id="fsBestLabel">أفضل محافظة</div><div class="value" id="fsBestGov">-</div></div><div class="fs-kpi"><div class="label" id="fsAvgLabel">متوسط الملاءمة</div><div class="value" id="fsAvgScore">-</div></div></div><section class="fs-rank-section"><h4 class="fs-rank-title" id="fsTopTitle">🏆 أفضل المحافظات</h4><div class="fs-rank-list" id="fsTopGovs"></div></section><section class="fs-rank-section"><h4 class="fs-rank-title" id="fsBottomTitle">⚠️ أقل المحافظات ملاءمة</h4><div class="fs-rank-list" id="fsBottomGovs"></div></section></aside><div class="fs-tooltip" id="fsMapTooltip"></div>
+</div>
+<footer aria-label="Developer and researcher contact information" class="mm-contact-footer">
+<div class="mm-footer-title">Mohamed M Mahmoud</div>
+<div class="mm-footer-grid">
+<a href="tel:+201102025455" title="Call Mohamed M Mahmoud">📞 01102025455</a>
+<a href="mailto:mmoustafa.m16@gmail.com" title="Email Mohamed M Mahmoud">✉️ mmoustafa.m16@gmail.com</a>
+<a href="https://orcid.org/0000-0002-7796-5420" rel="noopener noreferrer" target="_blank" title="ORCID profile">ORCID: 0000-0002-7796-5420</a>
+<a href="https://www.researchgate.net/profile/Mohamed-Mahmoud-341?ev=hdr_xprf" rel="noopener noreferrer" target="_blank" title="ResearchGate profile">ResearchGate Profile</a>
+<a href="http://www.scopus.com/inward/authorDetails.url?authorID=57604282600&amp;partnerID=MN8TOARS" rel="noopener noreferrer" target="_blank" title="Scopus author profile">Scopus Author ID: 57604282600</a>
+</div>
+<div class="mm-footer-note">Water Footprint Decision Tool — Developed and maintained by Mohamed M Mahmoud</div>
+</footer>
+<!-- Added enhancement layer: proposals 1,3,4,5,6,7,9 -->
+<script src="assets/js/app.js"></script></body>
+</html>
